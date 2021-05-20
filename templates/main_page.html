@@ -1,0 +1,122 @@
+<!--
+
+Editado em 19/05/2021 por Lucas silva: Modificações no sistema de envio de arquivo e desenvolvimento de um gif de loading.
+
+-->
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="icon" type="imagem/png" href="{{url_for('static', filename='icone.png')}}" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+        <title>PlagDetect</title>
+        <style type="text/css">
+            #opcao{
+              width: 20%;
+            }
+
+        </style>
+    </head>
+    <body>
+        <!-- Menu -->
+        <nav class="navbar navbar-inverse">
+            <div class="container">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    </button>
+                    <a class="navbar-brand" href="/"><h4><b>PlagDetect</b></h4></a>
+                </div>
+                <ul class="nav navbar-nav navbar-right">
+
+                    {% if current_user.is_authenticated %}
+                        <li><a href="{{ url_for('logout') }}"><input type = "button" value="Sair" id="botao" class="btn btn-success"></a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('login') }}"><input type = "button" value="Entrar" id="botao" class="btn btn-success"></a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </nav>
+        <!-- FIM -->
+        <div class="container">
+            {% if current_user.is_authenticated %}
+            <!-- Conteúdo a ser mostrado para usuário logado -->
+                <div id="container">
+ 	            	<div id="conteudo">
+	            	 	<form action = "/resultado/" method = "post" enctype="multipart/form-data">
+	            	 		<center>
+	            	 		    <img class="mb-4" src="{{url_for('static', filename='icone.png')}}" alt="" width="72" height="72" >
+	            	 			<h1>BEM-VINDO(A)</h1>
+	            		 		<label for="file">Submeta seu projeto e clique em "Enviar para análise"</label>
+	            		        </p>
+	            		        <p>Escolha um ano em que deseja realizar a análise:</p>
+	            		        <p id="opcao">
+                                    <select name="ano" class="form-control" required="" id="combo">
+                                      <option value='1'>Selecione um ano</option>
+                                      <option value='2019.1'>2019.1</option>
+                                      <option value='2019.2'>2019.2</option>
+                                      <option value='2019.4'>2019.4</option>
+                                      <option value='2019.5'>2019.5</option>
+                                      <option value='2019.6'>2019.6</option>
+                                      <option value='2020.1'>2020.1</option>
+                                      <option value='2020.3'>2020.3</option>
+                                      <option value='2020.4'>2020.4</option>
+                                      <option value='2020.5'>2020.5</option>
+                                      <option value='2020.6'>2020.6</option>
+                                      <option value='2021.1'>2021.1</option>
+                                      <option value='2021.2'>2021.2</option>
+                                    </select>
+
+	            		        </p><br>
+	            		        <p><input type="file" name="file" id="file" required=""/></p>
+	            		        <p><div id="mensagem"></div><div id="carregando"></div></p>
+	            		        <p><input type = "submit" value="Enviar para analise" id="botao" class="btn btn-success" onclick="mensagem(); boxmsg();"></p>
+	            		    </center>
+	            	    </form>
+	                </div>
+                </div>
+            <!-- FIM -->
+            {% else %}
+            <!-- Conteúdo a ser mostrado para usuários que não estão logados -->
+              <div id="container">
+                 		<div id="itens">
+                		 	<form action = "/resultado" method = "post" enctype="multipart/form-data">
+                		 		<center>
+                		 			<p><img style="width:70%" src="{{url_for('static', filename='logo_princ.png')}}"></p>
+                		 			PlagDetect é um projeto que tem como principal função a detecção de plágio em trabalhos submetidos por pesquisadores. Tal análise funciona a partir da base de dados dos projetos de pesquisa já submetidos em até três anos anteriores, em que todos os projetos são comparados e analisados com o que está sendo submetido pelo usuário.
+                                    <br><p><h3>Desenvolvedores:</h3></p>
+                                    <a href="http://lattes.cnpq.br/6473772734513371" class="badge badge-secondary" target="_blank">Antonio Paulo Uamba</a>
+                                    <a href="http://lattes.cnpq.br/3952242670843487" class="badge badge-secondary" target="_blank">Allberson Bruno de Oliveira Dantas</a>
+                                    <a href="http://lattes.cnpq.br/3896043147709191" class="badge badge-secondary" target="_blank">Renato Farias de Paiva</a>
+                                    <a href="http://lattes.cnpq.br/1418406807031520" class="badge badge-secondary" target="_blank">Pedro Bruno Silva Lemos</a>
+                                    <a href="http://lattes.cnpq.br/6136104141544990" class="badge badge-secondary" target="_blank">Lucas da Silva Maciel</a>
+
+                			    </center>
+                		    </form>
+                	    </div>
+                    </div>
+                <dir id="conteudo">
+                </dir>
+            <!-- Fim -->
+            {% endif %}
+        </div><!-- /.container -->
+    </body>
+    <script>
+        function boxmsg() {
+            var box = document.getElementById('combo').value;
+            if (box == 1) {
+                document.getElementById('mensagem').innerHTML = "<div class='alert alert-warning' role='alert'><p>Por favor, selecione um ano.</p></div>";
+            }
+        }
+        //Sistema SIMPLES de loading    
+        function mensagem() {
+            var file = document.getElementById('file').value;
+            if (file == false) {
+                document.getElementById('mensagem').innerHTML = "<div class='alert alert-warning' role='alert'>Por favor, selecione um arquivo para análise. <br>O sistema só funcionará após você inserir um arquivo.</div>"
+            }else {
+              document.getElementById('mensagem').innerHTML = "<div class='alert alert-success' role='alert'><p>Aguarde um momento. Estamos enviando o arquivo para análise e isso pode demorar um pouco.</p><img style='width:10%' src='{{url_for('static', filename='carregando.gif')}}'></div>";
+            }
+
+        }
+    </script>
+</html>

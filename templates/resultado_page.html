@@ -1,0 +1,130 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="icon" type="imagem/png" href="{{url_for('static', filename='icone.png')}}" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+        <title>PlagDetect</title>
+        <style type="text/css">
+            #titulo{
+                color: 	#008000;
+            }
+        </style>
+    </head>
+
+    <body>
+        <nav class="navbar navbar-inverse">
+            <div class="container">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    </button>
+                    <a class="navbar-brand" href="/"><h4><b>PlagDetect</b></h4></a>
+                </div>
+                <ul class="nav navbar-nav navbar-right">
+                    {% if current_user.is_authenticated %}
+                        <li><a href="{{ url_for('logout') }}"><input type = "button" value="Sair" id="botao" class="btn btn-success"></a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('login') }}"><input type = "button" value="Entrar" id="botao" class="btn btn-success"></a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </nav>
+        <div class="container">
+            {% if current_user.is_authenticated %}
+	            <div class="conteudo">
+	            	<div id="itens">
+	            		<div id="layout">
+	            		<div class="titulo"><h2 id="titulo"><center><b>Arquivo analisado com sucesso!!</b></center></h2></p></div>
+	            		<div class="nome_proj"><h4>Seu projeto: {{name}}</h4></div>
+	            		<div class="resultado">
+	                    {{resultado_neg}}
+	            		<div class="resultado_positivo">
+	            		    <p>
+	            		        {{encontrado}}
+	            		    </p>
+	            		    <p>
+	            		        {{tot_proj}}
+	            		    </p>
+	            		    <div id="tabela">
+	            		       <table class="table">
+	            		                <tr>
+	            		                    <th scope="col">Observações:</th>
+	            		                    <th scope="col">Projetos:</th>
+	            		                    <th scope="col">Valor de cópia:</th>
+	            		                    <th scope="col">Ano analisado:</th>
+	            		                    <th scope="col">Projetos comparados com o seu:</th>
+	            		                </tr>
+	            		                <tr>
+	            		                    <td>
+	            		                        {{mensagem}}
+	            		                    </td>
+	            		                    <td>
+	            		                        {{resultado_proj}}
+	            		                    </td>
+	            		                    <td>
+	            		                        {{resultado_max}}
+	            		                    </td>
+	            		                    <td>
+	            		                        {{valor_ano}}
+	            		                    </td>
+	            		                    <td>
+	            		                        {{tot_proj}}
+	            		                    </td>
+	            		                </tr>
+	            		        </table>
+	            		    </div>
+	                    <br>
+	            		</div>
+	            			<div id="bottao">
+	            				<center>
+	            				    <p>
+	            					    <a href="/" style="text-decoration:none;"><input type="button" name="" value="Realizar nova analise" id="botao_voltar" class="btn btn-warning"></a>
+	            					    <a href="/" style="text-decoration:none;"><input type="button" name="" value="Gerar comprovante" id="botao_voltar" class="btn btn-success" onclick="gerar()" ></a>
+
+	            				    </p>
+	            				</center>
+	            			</div>
+	            		</div>
+	            		</div>
+	            	</div>
+	            </div>
+            {% else %}
+              <div id="container">
+                 		<div id="itens">
+                		 	<form action = "/resultado" method = "post" enctype="multipart/form-data">
+                		 		<center>
+                		 			<p><img src="{{url_for('static', filename='Logo.png')}}"></p>
+                			    </center>
+                		    </form>
+                	    </div>
+                    </div>
+                <dir id="conteudo">
+
+                </dir>
+            {% endif %}
+        </div><!-- /.container -->
+
+    </body>
+<script>
+    //Função para criar tela de impressão de comprovante:
+    function gerar() {
+        var minhaTabela = document.getElementById('tabela').innerHTML;
+        var style = "<style>";
+        style = style + "table {width: 100%;font: 20px Calibri; border: solid 1px black; }";
+        style = style + "table, th, td {border: solid 1px black; border-collapse: collapse;}";
+        style = style + "padding: 2px 3px;text-align: center;}";
+        style = style + "</style>";
+        var win = window.open('', '', 'height=700,width=700');
+        win.document.write('<html><head>');
+        win.document.write('<title>Comprovante</title>');
+        win.document.write(style);
+        win.document.write('</head>');
+        win.document.write('<body>');
+        win.document.write("<center><p><img style='width:60%' src='{{url_for('static', filename='logo_princ.png')}}'</center></p><br>"+minhaTabela);
+        win.document.write('<br><center><input type="button" name="" value="Imprimir/Gerar PDF" id="botao_voltar" class="btn btn-success" onclick="window.print()" ></center></body></html>');
+        win.document.close();
+
+    }
+</script>
+</html>

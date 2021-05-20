@@ -1,0 +1,69 @@
+<!--
+Editado em 19/05/2021 por Lucas Silva: Adicionando comentários
+-->
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="icon" type="imagem/png" href="{{url_for('static', filename='icone.png')}}" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+
+        <title>PlagDetect</title>
+
+    </head>
+
+    <body>
+        <!-- menu -->
+        <nav class="navbar navbar-inverse">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+
+              </button>
+              <a class="navbar-brand" href="/"><h4><b>PlagDetect</b></h4></a>
+            </div>
+            <ul class="nav navbar-nav navbar-right">
+                    <li><a href="/"><input type = "button" value="Voltar" id="botao" class="btn btn-success"></a></li>
+                </ul>
+          </div>
+        </nav>
+        <!-- FIM -->
+        <div class="container">
+
+                {% if error %}
+                <!-- Mensagem de alerta ao usuário que digitou informações incorretas ou que não estão na base de dados -->
+                 <div class="row">
+                    <div class="form-group col-xs-4">
+                        <div class="alert alert-warning" role="alert">
+                            Ops!! Usuário ou senha incorreta(ou os dados fornecidos não se encontram na nossa base de dados)...
+                        </div>
+                    </div>
+                 </div>
+                 <!-- FIM -->
+                {% endif %}
+                <!-- Sistema de login -->
+                    <form action="." method="POST">
+                        <p><img src="{{url_for('static', filename='logo2.png')}}"></p>
+                        <div class="row">
+                        <div class="form-group col-xs-6">
+                            <label for="username">Usuario:</label>
+                            <input class="form-control mx-sm-3 mb-2" id="username" name="username" placeholder="Usuario" required="">
+                        </div>
+                        </div>
+                        <div class="row">
+                        <div class="form-group col-xs-6">
+                            <label for="password">Senha:</label>
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Senha" required="">
+                        </div>
+                        </div>
+                      <p><button type="submit" class="btn btn-success btn-xs-4">Entrar</button></p>
+                    </form>
+                <!-- FIM -->
+            </div>
+        </div>
+    </body>
+</html>
+
+
+
