@@ -4,12 +4,14 @@ from flask_login import current_user, login_required, login_user, LoginManager, 
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from werkzeug.security import check_password_hash
+from werkzeug.security import generate_password_hash
 
 #importando bibliotecas para o sistema PlagDetect
 import re
 import os, os.path
 import plotly.offline
 import shutil
+
 from flask import *
 import plotly.graph_objects as go #nova importação
 import numpy as np #nova importação
@@ -18,35 +20,31 @@ from nltk.tokenize import word_tokenize
 from scipy.ndimage import gaussian_filter
 from nltk.lm import MLE, WittenBellInterpolated
 from nltk.util import ngrams, pad_sequence, everygrams
-
-
+import nltk
+nltk.download()
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
 
 #indicando a pasta em que os arquivos serão salvos:
-UPLOAD_FOLDER = '/home/{nome_de_usuario}/mysite/uploads/'
-RESULTADO_FOLDER = '/home/{nome_de_usuario}/mysite/resultados/'
+UPLOAD_FOLDER = './uploads/'
+RESULTADO_FOLDER = './resultados/'
 
 #Atribuindo valores path para buscar arquivos:
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['RESULTADO_FOLDER'] = RESULTADO_FOLDER
 
-
-SQLALCHEMY_DATABASE_URI = "mysql+mysqlconnector://{nome_de_usuario}:{senha_do_banco_de_dados}@{nome_de_usuario}.mysql.pythonanywhere-services.com/{nome_de_usuario}${nome_do_banco_de_dados}".format(
-    username="SOMETHING",
-    password="SOMETHINGELSE",
-    hostname="SOMETHING.mysql.pythonanywhere-services.com",
-    databasename="SOMETHING$comments",
-)
-app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
-app.config["SQLALCHEMY_POOL_RECYCLE"] = 299
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-app.secret_key = "SOMETHING RANDOM"
-login_manager = LoginManager()
-login_manager.init_app(app)
+try:
+    app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:root@localhost:5432/plag"
+    app.config["SQLALCHEMY_POOL_RECYCLE"] = 299
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    db = SQLAlchemy(app)
+    migrate = Migrate(app, db)
+    app.secret_key = "SOMETHING RANDOM"
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+except:
+    print("Erro")
 
 
 class User(UserMixin, db.Model):
@@ -58,11 +56,15 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
 
     def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+        print("Senha enviada:", password)
+        print("Senha banco:", self.password_hash)
+        print((password == self.password_hash))
+        return (password == self.password_hash)
 
 
     def get_id(self):
         return self.username
+
 
 
 @login_manager.user_loader
@@ -107,10 +109,10 @@ def success():
 
         #analisando arquivos:
         ano_salvo = str(a[0])
-        resultado_analise = next(os.walk("/home/{nome_de_usuario}/mysite/resultados/"))
-        path, dirs, files = next(os.walk("/home/{nome_de_usuario}/mysite/projetos/"+ano_salvo+"/"))
+        resultado_analise = next(os.walk("./resultados/"))
+        path, dirs, files = next(os.walk("./projetos/"+ano_salvo+"/"))
         file_count = len(files)
-        texto = "/home/{nome_de_usuario}/mysite/uploads/"+f.filename
+        texto = "./uploads/"+f.filename
         valores_maximos = []
         valores_medios = []
         valores_arquivo = []
@@ -118,8 +120,8 @@ def success():
         j = 0
         while j < file_count:
             #Variaveis:
-            texto = "/home/{nome_de_usuario}/mysite/uploads/"+f.filename
-            texto_salvo = parser.from_file("/home/{nome_de_usuario}/mysite/projetos/"+ano_salvo+"/"+files[j])
+            texto = "./uploads/"+f.filename
+            texto_salvo = parser.from_file("./projetos/"+ano_salvo+"/"+files[j])
             texto_fornecido = parser.from_file(texto)
 
             #Fornecendo dados para a variável "train_text" com o valor de "texto_salvo" para posteriormente ser analisado
@@ -221,7 +223,7 @@ def success():
         if len(maxx) == 0:
            ano = ano_salvo
            resultado_false = "Nenhum arquivo encontrado que se iguale com o seu"
-           os.remove('/home/{nome_de_usuario}/mysite/uploads/'+f.filename) #removendo arquivo enviado pelo usuário
+           os.remove('./uploads/'+f.filename) #removendo arquivo enviado pelo usuário
            return render_template("resultado_page.html", name = f.filename, resultado_neg = resultado_false, valor_ano = ano)
         elif len(maxx) > 0:
             ano = ano_salvo
@@ -231,7 +233,7 @@ def success():
             enc = "Encontramos alguns projetos tiveram resultados positivos no momento de nossa análise. Veja a tabela abaixo"
             projetos_nomes_ok = files[int(maxx)]
             mens = "O(s) projeto(s) analisado(s) pode/podem ter um valor igual ou superior ao mostrado na coluna 'valor de cópia' : "
-            os.remove('/home/{nome_de_usuario}/mysite/uploads/'+f.filename)
+            os.remove('./uploads/'+f.filename)
             return render_template("resultado_page.html", name = f.filename, mensagem = mens,resultado_men = resultado_mensagem, resultado_proj = projetos_nomes_ok, resultado_max = valor, encontrado = enc, valor_ano = ano, tot_proj = tot_projetos)
 
 #Saindo da conta
