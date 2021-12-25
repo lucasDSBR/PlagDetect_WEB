@@ -21,7 +21,13 @@ from scipy.ndimage import gaussian_filter
 from nltk.lm import MLE, WittenBellInterpolated
 from nltk.util import ngrams, pad_sequence, everygrams
 import nltk
-nltk.download()
+
+#Arquives For tratament text
+from wordProcess import PreProcess
+#Arquives For DSpace
+from getArquivesDspace import arquives
+
+
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
@@ -54,11 +60,9 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(128))
     password_hash = db.Column(db.String(128))
-
+    
+    
     def check_password(self, password):
-        print("Senha enviada:", password)
-        print("Senha banco:", self.password_hash)
-        print((password == self.password_hash))
         return (password == self.password_hash)
 
 
@@ -106,7 +110,9 @@ def success():
         a = request.form.getlist('ano')
         f = request.files['file']
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], f.filename))
-
+        
+        arquives()
+        
         #analisando arquivos:
         ano_salvo = str(a[0])
         resultado_analise = next(os.walk("./resultados/"))
@@ -126,6 +132,8 @@ def success():
 
             #Fornecendo dados para a variável "train_text" com o valor de "texto_salvo" para posteriormente ser analisado
             train_text = texto_salvo['content']
+            
+            PreProcess(train_text)
             # aplique o pré-processamento (remova o texto entre colchetes e chaves e rem punc)
             train_text = re.sub(r"\[.*\]|\{.*\}", "", train_text)
             train_text = re.sub(r'[^\w\s]', "", train_text)
@@ -198,9 +206,9 @@ def success():
             valores_scores = np.array(scores)
 
             #Atribuindo valores para propor condições de valores:
-            buscar_max = 0.9000000000000000 #Nivel alto de plágio
+            buscar_max = 0.7000000000000000 #Nivel alto de plágio
 
-            buscar_med = 0.8000000000000000 #Nível acima da média
+            buscar_med = 0.6000000000000000 #Nível acima da média
 
             #atribuindo valores mais autos de cópia
             maximo = np.where(valores_scores > buscar_max)[0]
