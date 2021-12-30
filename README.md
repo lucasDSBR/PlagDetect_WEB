@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img alt="NextLevelWeek" title="#NextLevelWeek" src="./static/logo_princ.png" />
+  <img alt="" title="" src="./static/logo_princ.png" />
 </h1>
 <p align="justify">PlagDetect é um projeto que tem como principal função a detecção de plágio em trabalhos submetidos por pesquisadores de uma determinada instituição. Tal análise funciona a partir da base de dados dos projetos de pesquisa já submetidos em até três anos anteriores, em que todos os projetos são comparados e analisados com o que está sendo submetido pelo usuário.</p>
 <p align="justify">Atualmente(20/05/2021) o PlagDetect encontra-se hospenado no <a href="https://www.pythonanywhere.com/">Pythonanywhere<a> podendo ser acessado no seguinte link: <a href="https://tinyurl.com/PlagDetectCPQ">PlagDetect<a>. Mas logo-logo a aplicação será hospedada nos servidores da Universidade da integração internacional da lusofonia Afro-brasileira(UNILAB)</p>

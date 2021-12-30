@@ -41,6 +41,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['RESULTADO_FOLDER'] = RESULTADO_FOLDER
 
 try:
+    print("Connectando ao banco")
     app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:root@localhost:5432/plag"
     app.config["SQLALCHEMY_POOL_RECYCLE"] = 299
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -49,6 +50,7 @@ try:
     app.secret_key = "SOMETHING RANDOM"
     login_manager = LoginManager()
     login_manager.init_app(app)
+    print("Ok")
 except:
     print("Erro")
 
@@ -111,8 +113,6 @@ def success():
         f = request.files['file']
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], f.filename))
         
-        arquives()
-        
         #analisando arquivos:
         ano_salvo = str(a[0])
         resultado_analise = next(os.walk("./resultados/"))
@@ -132,8 +132,6 @@ def success():
 
             #Fornecendo dados para a variável "train_text" com o valor de "texto_salvo" para posteriormente ser analisado
             train_text = texto_salvo['content']
-            
-            PreProcess(train_text)
             # aplique o pré-processamento (remova o texto entre colchetes e chaves e rem punc)
             train_text = re.sub(r"\[.*\]|\{.*\}", "", train_text)
             train_text = re.sub(r'[^\w\s]', "", train_text)
@@ -250,3 +248,5 @@ def success():
 def logout():
     logout_user()
     return redirect(url_for('index'))
+
+app.run()
