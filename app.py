@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from werkzeug.security import check_password_hash
 from werkzeug.security import generate_password_hash
+import requests
 
 #importando bibliotecas para o sistema PlagDetect
 import re
@@ -22,12 +23,8 @@ from nltk.lm import MLE, WittenBellInterpolated
 from nltk.util import ngrams, pad_sequence, everygrams
 import nltk
 
-#Arquives For tratament text
-from wordProcess import PreProcess
-#Arquives For DSpace
-from getArquivesDspace import arquives
-
-
+import sklearn
+from sklearn import tree
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
@@ -115,108 +112,137 @@ def success():
         
         #analisando arquivos:
         ano_salvo = str(a[0])
-        resultado_analise = next(os.walk("./resultados/"))
-        path, dirs, files = next(os.walk("./projetos/"+ano_salvo+"/"))
-        file_count = len(files)
+        # resultado_analise = next(os.walk("./resultados/"))
+        # path, dirs, files = next(os.walk("./projetos/"+ano_salvo+"/"))
+        # file_count = len(files)
         texto = "./uploads/"+f.filename
         valores_maximos = []
         valores_medios = []
         valores_arquivo = []
-
-        j = 0
-        while j < file_count:
-            #Variaveis:
-            texto = "./uploads/"+f.filename
-            texto_salvo = parser.from_file("./projetos/"+ano_salvo+"/"+files[j])
-            texto_fornecido = parser.from_file(texto)
-
-            #Fornecendo dados para a variável "train_text" com o valor de "texto_salvo" para posteriormente ser analisado
-            train_text = texto_salvo['content']
-            # aplique o pré-processamento (remova o texto entre colchetes e chaves e rem punc)
-            train_text = re.sub(r"\[.*\]|\{.*\}", "", train_text)
-            train_text = re.sub(r'[^\w\s]', "", train_text)
-
-            # definir o número ngram
-            n = 5
-
-            # preencher o texto e tokenizar
-            training_data = list(pad_sequence(word_tokenize(train_text), n,
-                                              pad_left=True,
-                                              left_pad_symbol="<s>"))
-
-            # gerar ngrams
-            ngrams = list(everygrams(training_data, max_len=n))
-
-            # build ngram language models
-            model = WittenBellInterpolated(n)
-            model.fit([ngrams], vocabulary_text=training_data)
-
-            #Fornecendo dados para a variável "testt_text" com o valor de pdf2_test para posteriormente ser comparado com o arquivo de treinamento
-            test_text = texto_fornecido['content']
-            test_text = re.sub(r'[^\w\s]', "", test_text)
-
-            # Tokenize e preencha o texto
-            testing_data = list(pad_sequence(word_tokenize(test_text), n,
-                                             pad_left=True,
-                                             left_pad_symbol="<s>"))
-
-            # atribuir pontuações
-            scores = []
-            for i, item in enumerate(testing_data[n-1:]):
-                s = model.score(item, testing_data[i:i+n-1])
-                scores.append(s)
-
-            scores_np = np.array(scores)
-
-            # definir largura e altura
-            width = 8
-            height = np.ceil(len(testing_data)/width).astype("int64")
-
-            # copiar pontuações para matriz em branco retangular
-            a = np.zeros(width*height)
-            a[:len(scores_np)] = scores_np
-            diff = len(a) - len(scores_np)
-
-            # aplique suavização gaussiana para estética
-            a = gaussian_filter(a, sigma=1.0)
-
-            # remodelar para caber no retângulo
-            a = a.reshape(-1, width)
-
-            # rótulos de formato
-            labels = [" ".join(testing_data[i:i+width]) for i in range(n-1, len(testing_data), width)]
-            labels_individual = [x.split() for x in labels]
-            labels_individual[-1] += [""]*diff
-            labels = [f"{x:60.60}" for x in labels]
-
-            # criar mapa de calor para colocar no resultado visual
-            fig = go.Figure(data=go.Heatmap(
-                            z=a, x0=0, dx=1,
-                            y=labels, zmin=0, zmax=1,
-                            customdata=labels_individual,
-                            hovertemplate='%{customdata} <br><b>Pontuacao:%{z:.3f}<extra></extra>',
-                            colorscale="burg"))
-            fig.update_layout({"height":height*40, "width":1000, "font":{"family":"Courier New"}})
-            #criando resultado visual:
-            #plotly.offline.plot(fig, filename='/home/Allberson/mysite/resultados/resultado.html', auto_open=False)
+        
+        #################### LAÇO PARA API ####################
+        def getArquivesData():
+            file = requests.get("https://demo.dspace.org/rest/items")
+            data = json.loads(file.text)
+            return data
+        def arquives():
+            ids = []
+            textosDSpace = []
+            data = getArquivesData()
+            j = 0
+            for item in data:
+                ids.append(item['uuid'])
             
-            #Armazenando dados dos scores para mostrar posteriormente
-            valores_scores = np.array(scores)
+            for idsItem in ids:
+                file = requests.get('https://demo.dspace.org/rest/items/'+str(idsItem)+'/bitstreams')
+                dataItem = json.loads(file.text)
+                for itemPDF in dataItem:
+                    if(itemPDF['mimeType'] == "application/pdf"):
+                        arquive = requests.get('https://demo.dspace.org/rest/bitstreams/'+str(itemPDF['uuid'])+'/retrieve', allow_redirects=True)
+                        open('./ArquivosDSpace/'+str(itemPDF['uuid'])+'.pdf', 'wb').write(arquive.content)
+                        texto_salvo = parser.from_file("./ArquivosDSpace/"+str(itemPDF['uuid'])+".pdf")
+                        train_text = texto_salvo['content']
+                        os.remove("./ArquivosDSpace/"+str(itemPDF['uuid'])+".pdf")
+                        #Variaveis:
+                        texto = "./uploads/"+f.filename
+                        texto_fornecido = parser.from_file(texto)
 
-            #Atribuindo valores para propor condições de valores:
-            buscar_max = 0.7000000000000000 #Nivel alto de plágio
+                        #Fornecendo dados para a variável "train_text" com o valor de "texto_salvo" para posteriormente ser analisado
+                        train_text = texto_salvo['content']
+                        # aplique o pré-processamento (remova o texto entre colchetes e chaves e rem punc)
+                        train_text = re.sub(r"\[.*\]|\{.*\}", "", train_text)
+                        train_text = re.sub(r'[^\w\s]', "", train_text)
 
-            buscar_med = 0.6000000000000000 #Nível acima da média
+                        # definir o número ngram
+                        n = 5
 
-            #atribuindo valores mais autos de cópia
-            maximo = np.where(valores_scores > buscar_max)[0]
-            medio = np.where(valores_scores > buscar_med)[0] #Nao ustilizado no momento
-            valores_maximos.insert(j, len(maximo))
-            valores_medios.insert(j, len(medio)) #Nao ustilizado no momento
-            valores_arquivo.insert(j, files[j])
+                        # preencher o texto e tokenizar
+                        training_data = list(pad_sequence(word_tokenize(train_text), n,
+                                                            pad_left=True,
+                                                            left_pad_symbol="<s>"))
 
-            j = j + 1
+                        # gerar ngrams
+                        ngrams = list(everygrams(training_data, max_len=n))
 
+                        # build ngram language models
+                        model = WittenBellInterpolated(n)
+                        model.fit([ngrams], vocabulary_text=training_data)
+
+                        #Fornecendo dados para a variável "testt_text" com o valor de pdf2_test para posteriormente ser comparado com o arquivo de treinamento
+                        test_text = texto_fornecido['content']
+                        test_text = re.sub(r'[^\w\s]', "", test_text)
+
+                        # Tokenize e preencha o texto
+                        testing_data = list(pad_sequence(word_tokenize(test_text), n,
+                                                            pad_left=True,
+                                                            left_pad_symbol="<s>"))
+
+                        # atribuir pontuações
+                        scores = []
+                        for i, item in enumerate(testing_data[n-1:]):
+                            s = model.score(item, testing_data[i:i+n-1])
+                            scores.append(s)
+
+                        scores_np = np.array(scores)
+
+                        # definir largura e altura
+                        width = 8
+                        height = np.ceil(len(testing_data)/width).astype("int64")
+
+                        # copiar pontuações para matriz em branco retangular
+                        a = np.zeros(width*height)
+                        a[:len(scores_np)] = scores_np
+                        diff = len(a) - len(scores_np)
+
+                        # aplique suavização gaussiana para estética
+                        a = gaussian_filter(a, sigma=1.0)
+
+                        # remodelar para caber no retângulo
+                        a = a.reshape(-1, width)
+
+                        # rótulos de formato
+                        labels = [" ".join(testing_data[i:i+width]) for i in range(n-1, len(testing_data), width)]
+                        labels_individual = [x.split() for x in labels]
+                        labels_individual[-1] += [""]*diff
+                        labels = [f"{x:60.60}" for x in labels]
+
+                        # criar mapa de calor para colocar no resultado visual
+                        # fig = go.Figure(data=go.Heatmap(
+                        #                 z=a, x0=0, dx=1,
+                        #                 y=labels, zmin=0, zmax=1,
+                        #                 customdata=labels_individual,
+                        #                 hovertemplate='%{customdata} <br><b>Pontuacao:%{z:.3f}<extra></extra>',
+                        #                 colorscale="burg"))
+                        # fig.update_layout({"height":height*40, "width":1000, "font":{"family":"Courier New"}})
+                        #criando resultado visual:
+                        #plotly.offline.plot(fig, filename='/home/Allberson/mysite/resultados/resultado.html', auto_open=False)
+
+                        #Armazenando dados dos scores para mostrar posteriormente
+                        valores_scores = np.array(scores)
+
+                        features = [[1],
+                                [0.90], 
+                                [0.70], 
+                                [0.60],
+                                [0.50],
+                                [0.40],
+                                [0.30]]
+                        labels = [
+                                "Plágio total", 
+                                "Nível máximo", 
+                                "Nível máximo/moderado", 
+                                "Nível moderado", 
+                                "Nível moderado/baixo", 
+                                "Nível Baixo", 
+                                "Nível Sem plágio"
+                                ]
+                        clf = tree.DecisionTreeClassifier()
+                        clf = clf.fit(features, labels)
+                        nivel = (clf.predict(X = [[valores_scores.max]]))
+
+                        valores_arquivo.insert(j, itemPDF['uuid'])
+                        j = j + 1
+        arquives()
         #buscando arquivo com maior nível igualdade:
         val_maximo = np.array(valores_maximos)
         val_medio = np.array(valores_medios)
@@ -233,11 +259,11 @@ def success():
            return render_template("resultado_page.html", name = f.filename, resultado_neg = resultado_false, valor_ano = ano)
         elif len(maxx) > 0:
             ano = ano_salvo
-            tot_projetos = file_count
+            tot_projetos = 2
             resultado_mensagem = 'Encontramos um projeto com uma grande similaridade.'
             valor = "80%"
             enc = "Encontramos alguns projetos tiveram resultados positivos no momento de nossa análise. Veja a tabela abaixo"
-            projetos_nomes_ok = files[int(maxx)]
+            projetos_nomes_ok = 2
             mens = "O(s) projeto(s) analisado(s) pode/podem ter um valor igual ou superior ao mostrado na coluna 'valor de cópia' : "
             os.remove('./uploads/'+f.filename)
             return render_template("resultado_page.html", name = f.filename, mensagem = mens,resultado_men = resultado_mensagem, resultado_proj = projetos_nomes_ok, resultado_max = valor, encontrado = enc, valor_ano = ano, tot_proj = tot_projetos)
